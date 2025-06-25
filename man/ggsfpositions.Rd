@@ -2,8 +2,7 @@
 % Please edit documentation in R/ggsfpositions-package.R
 \docType{package}
 \name{ggsfpositions}
-\alias{ggsfpostions}
-\alias{ggsfpostions-package}
+\alias{ggsfpositions-package}
 \alias{ggsfpositions}
 \title{Position Adjustments for sf Points in ggplot2}
 \description{
@@ -172,6 +171,6 @@ ggplot(data) +
 
 }
 \author{
-\strong{Maintainer}: First Last \email{first.last@example.com}
+\strong{Maintainer}: Timo Schürmann \email{info@timoschuermann.org}
 
 }

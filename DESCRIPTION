@@ -1,9 +1,9 @@
-Package: ggsfpostions
+Package: ggsfpositions
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Timo", "Schürmann", , "info@timoschuermann.org", role = c("aut", "cre"))
+Description: The ggsfpositions package provides position adjustments for sf point geometries in ggplot2. It includes functions to jitter points, arrange them in grids, dodge them horizontally, or arrange them in triangular patterns. These adjustments help to avoid overplotting and create more informative visualizations of spatial point data.
 License: CC BY 4.0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
