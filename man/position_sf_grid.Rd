@@ -2,22 +2,30 @@
 % Please edit documentation in R/position.R
 \name{position_sf_grid}
 \alias{position_sf_grid}
-\title{Arrange sf point geometries in a grid pattern by group}
+\title{Arrange sf point geometries in a grid pattern}
 \usage{
-position_sf_grid(ncol = 3, spacing = 0.01, bound = NULL)
+position_sf_grid(
+  ncol = 3,
+  x_spacing = 0.01,
+  y_spacing = 0.01,
+  bound = NULL,
+  hjust = 0.5,
+  vjust = 0.5
+)
 }
 \arguments{
 \item{ncol}{integer, number of columns in the grid. Defaults to 3.}
 
-\item{spacing}{numeric, spacing between grid points. Defaults to 0.01.}
+\item{x_spacing}{numeric, horizontal spacing between grid points. Defaults to 0.01.}
 
-\item{bound}{sf polygon object that defines the boundary within which points should stay.
-If NULL, points are not constrained.}
-}
-\value{
-A Position object that can be used with geom_sf.
+\item{y_spacing}{numeric, vertical spacing between grid points. Defaults to 0.01.}
+
+\item{bound}{sf polygon object that defines the boundary within which points should stay.}
+
+\item{hjust}{numeric between 0 and 1, horizontal justification. 0 = left, 1 = right. Defaults to 0.5.}
+
+\item{vjust}{numeric between 0 and 1, vertical justification. 0 = bottom, 1 = top. Defaults to 0.5.}
 }
 \description{
-Creates a Position object that arranges overlapping points in a grid pattern,
-using ggplot2's group aesthetic.
+Arrange sf point geometries in a grid pattern
 }

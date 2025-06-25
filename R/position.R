@@ -62,8 +62,20 @@ position_sf_jitter <- function(width = 0.01, height = 0.01, seed = NULL) {
   )
 }
 
-# Für position_sf_dodge:
-position_sf_dodge <- function(width = 0.01, bound = NULL) {
+#' Horizontally dodge overlapping sf point geometries
+#'
+#' @param width numeric, amount of horizontal spacing between points. Defaults to 0.01.
+#' @param bound sf polygon object that defines the boundary within which points should stay.
+#' @param hjust numeric between 0 and 1, horizontal justification. 0 = left, 1 = right. Defaults to 0.5.
+#' @param vjust numeric between 0 and 1, vertical justification. 0 = bottom, 1 = top. Defaults to 0.5.
+#'
+#' @export
+position_sf_dodge <- function(
+  width = 0.01,
+  bound = NULL,
+  hjust = 0.5,
+  vjust = 0.5
+) {
   ggproto(
     NULL,
     PositionIdentity,
@@ -72,14 +84,16 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
         return(data)
       }
 
-      # Nutze die ggplot2 Gruppierung
+      # Validiere hjust und vjust
+      hjust <- max(0, min(1, hjust))
+      vjust <- max(0, min(1, vjust))
+
       if (!"group" %in% names(data)) {
         group_col <- rep(1, nrow(data))
       } else {
         group_col <- data$group
       }
 
-      # Für jede Gruppe separat verarbeiten
       unique_groups <- unique(group_col)
       for (g in unique_groups) {
         group_mask <- group_col == g
@@ -89,20 +103,19 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
         n_points <- nrow(coords)
 
         if (n_points > 1) {
-          # Sortiere nach Größe wenn size gesetzt ist
           if ("size" %in% names(data)) {
             size_order <- order(data$size[group_mask], decreasing = TRUE)
             coords <- coords[size_order, ]
             group_data <- group_data[size_order, ]
           }
 
-          # Original center point für die Gruppe
           center_point <- st_point(c(mean(coords[, "X"]), mean(coords[, "Y"])))
 
-          # Berechne Offsets von links nach rechts
-          offsets <- seq(-width / 2, width / 2, length.out = n_points)
+          # Anpassen der Offsets basierend auf hjust
+          total_width <- width
+          start_x <- -width * hjust
+          offsets <- seq(start_x, start_x + width, length.out = n_points)
 
-          # Wenn bound gegeben, stelle sicher dass Punkte innerhalb bleiben
           if (!is.null(bound)) {
             scale_factor <- 1
             repeat {
@@ -123,9 +136,7 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
 
               scale_factor <- scale_factor * 0.9
               if (scale_factor < 0.01) {
-                warning(
-                  "Could not place all points within boundary, using original positions"
-                )
+                warning("Could not place all points within boundary")
                 break
               }
             }
@@ -140,7 +151,11 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
               }),
               crs = st_crs(group_data$geometry)
             )
-            data$geometry[group_mask] <- new_geom[order(size_order)]
+            if ("size" %in% names(data)) {
+              data$geometry[group_mask] <- new_geom[order(size_order)]
+            } else {
+              data$geometry[group_mask] <- new_geom
+            }
           }
         }
       }
@@ -150,12 +165,23 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
   )
 }
 
-# Für position_sf_grid:
+#' Arrange sf point geometries in a grid pattern
+#'
+#' @param ncol integer, number of columns in the grid. Defaults to 3.
+#' @param x_spacing numeric, horizontal spacing between grid points. Defaults to 0.01.
+#' @param y_spacing numeric, vertical spacing between grid points. Defaults to 0.01.
+#' @param bound sf polygon object that defines the boundary within which points should stay.
+#' @param hjust numeric between 0 and 1, horizontal justification. 0 = left, 1 = right. Defaults to 0.5.
+#' @param vjust numeric between 0 and 1, vertical justification. 0 = bottom, 1 = top. Defaults to 0.5.
+#'
+#' @export
 position_sf_grid <- function(
   ncol = 3,
   x_spacing = 0.01,
   y_spacing = 0.01,
-  bound = NULL
+  bound = NULL,
+  hjust = 0.5,
+  vjust = 0.5
 ) {
   ggproto(
     NULL,
@@ -165,14 +191,16 @@ position_sf_grid <- function(
         return(data)
       }
 
-      # Nutze die ggplot2 Gruppierung
+      # Validiere hjust und vjust
+      hjust <- max(0, min(1, hjust))
+      vjust <- max(0, min(1, vjust))
+
       if (!"group" %in% names(data)) {
         group_col <- rep(1, nrow(data))
       } else {
         group_col <- data$group
       }
 
-      # Für jede Gruppe separat verarbeiten
       unique_groups <- unique(group_col)
       for (g in unique_groups) {
         group_mask <- group_col == g
@@ -182,35 +210,36 @@ position_sf_grid <- function(
         n_points <- nrow(coords)
 
         if (n_points > 0) {
-          # Sortiere nach Größe wenn size gesetzt ist
           if ("size" %in% names(data)) {
             size_order <- order(data$size[group_mask], decreasing = TRUE)
             coords <- coords[size_order, ]
             group_data <- group_data[size_order, ]
           }
 
-          # Original center point für die Gruppe
           center_point <- st_point(c(mean(coords[, "X"]), mean(coords[, "Y"])))
 
-          # Berechne Grid-Layout
           cols <- min(ncol, n_points)
           rows <- ceiling(n_points / cols)
 
-          # Wenn bound gegeben, stelle sicher dass Punkte innerhalb bleiben
           scale_factor <- 1
           repeat {
+            # Anpassen der Grid-Position basierend auf hjust und vjust
+            x_total_width <- (cols - 1) * x_spacing
+            y_total_height <- (rows - 1) * y_spacing
+
+            x_start <- -x_total_width * hjust
+            y_start <- y_total_height * (1 - vjust)
+
             grid_x <- rep(
-              seq(-(cols - 1) / 2, (cols - 1) / 2, length.out = cols),
+              seq(x_start, x_start + x_total_width, length.out = cols),
               length.out = n_points
             ) *
-              x_spacing *
               scale_factor
 
             grid_y <- rep(
-              seq((rows - 1) / 2, -(rows - 1) / 2, length.out = rows),
+              seq(y_start, y_start - y_total_height, length.out = rows),
               each = cols
             )[1:n_points] *
-              y_spacing *
               scale_factor
 
             new_coords <- coords
@@ -236,9 +265,7 @@ position_sf_grid <- function(
 
             scale_factor <- scale_factor * 0.9
             if (scale_factor < 0.01) {
-              warning(
-                "Could not place all points within boundary, using original positions"
-              )
+              warning("Could not place all points within boundary")
               break
             }
           }
@@ -264,8 +291,20 @@ position_sf_grid <- function(
   )
 }
 
-# Für position_sf_triangle:
-position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
+#' Arrange sf point geometries in a triangular pattern
+#'
+#' @param spacing numeric, spacing between points. Defaults to 0.01.
+#' @param bound sf polygon object that defines the boundary within which points should stay.
+#' @param hjust numeric between 0 and 1, horizontal justification. 0 = left, 1 = right. Defaults to 0.5.
+#' @param vjust numeric between 0 and 1, vertical justification. 0 = bottom, 1 = top. Defaults to 0.5.
+#'
+#' @export
+position_sf_triangle <- function(
+  spacing = 0.01,
+  bound = NULL,
+  hjust = 0.5,
+  vjust = 0.5
+) {
   ggproto(
     NULL,
     PositionIdentity,
@@ -274,14 +313,16 @@ position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
         return(data)
       }
 
-      # Nutze die ggplot2 Gruppierung
+      # Validiere hjust und vjust
+      hjust <- max(0, min(1, hjust))
+      vjust <- max(0, min(1, vjust))
+
       if (!"group" %in% names(data)) {
         group_col <- rep(1, nrow(data))
       } else {
         group_col <- data$group
       }
 
-      # Für jede Gruppe separat verarbeiten
       unique_groups <- unique(group_col)
       for (g in unique_groups) {
         group_mask <- group_col == g
@@ -291,27 +332,30 @@ position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
         n_points <- nrow(coords)
 
         if (n_points > 0) {
-          # Sortiere nach Größe wenn size gesetzt ist
           if ("size" %in% names(data)) {
             size_order <- order(data$size[group_mask], decreasing = TRUE)
             coords <- coords[size_order, ]
             group_data <- group_data[size_order, ]
           }
 
-          # Original center point für die Gruppe
           center_point <- st_point(c(mean(coords[, "X"]), mean(coords[, "Y"])))
 
-          # Berechne Dreiecks-Positionen
           scale_factor <- 1
           repeat {
             positions <- data.frame(x_offset = 0, y_offset = 0)
             level <- 1
+            max_width <- 0
+            max_height <- 0
 
             while (nrow(positions) < n_points) {
               level <- level + 1
+              current_width <- (level - 1) * spacing
+              max_width <- max(max_width, current_width)
+              max_height <- (level - 1) * spacing * 0.866 # sqrt(3)/2
+
               for (i in 1:level) {
-                x_off <- (i - (level + 1) / 2) * spacing * scale_factor
-                y_off <- -(level - 1) * spacing * 0.866 * scale_factor
+                x_off <- (i - (level + 1) / 2) * spacing
+                y_off <- -(level - 1) * spacing * 0.866
                 positions <- rbind(
                   positions,
                   data.frame(x_offset = x_off, y_offset = y_off)
@@ -320,6 +364,15 @@ position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
             }
 
             positions <- positions[1:n_points, ]
+
+            # Anpassen der Position basierend auf hjust und vjust
+            positions$x_offset <- positions$x_offset - max_width * (hjust - 0.5)
+            positions$y_offset <- positions$y_offset +
+              max_height * (vjust - 0.5)
+
+            positions$x_offset <- positions$x_offset * scale_factor
+            positions$y_offset <- positions$y_offset * scale_factor
+
             new_coords <- coords
             new_coords[, "X"] <- coords[, "X"] + positions$x_offset
             new_coords[, "Y"] <- coords[, "Y"] + positions$y_offset
@@ -343,9 +396,7 @@ position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
 
             scale_factor <- scale_factor * 0.9
             if (scale_factor < 0.01) {
-              warning(
-                "Could not place all points within boundary, using original positions"
-              )
+              warning("Could not place all points within boundary")
               break
             }
           }

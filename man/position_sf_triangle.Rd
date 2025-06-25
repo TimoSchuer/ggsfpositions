@@ -2,20 +2,19 @@
 % Please edit documentation in R/position.R
 \name{position_sf_triangle}
 \alias{position_sf_triangle}
-\title{Arrange sf point geometries in a triangular pattern by group}
+\title{Arrange sf point geometries in a triangular pattern}
 \usage{
-position_sf_triangle(spacing = 0.01, bound = NULL)
+position_sf_triangle(spacing = 0.01, bound = NULL, hjust = 0.5, vjust = 0.5)
 }
 \arguments{
 \item{spacing}{numeric, spacing between points. Defaults to 0.01.}
 
-\item{bound}{sf polygon object that defines the boundary within which points should stay.
-If NULL, points are not constrained.}
-}
-\value{
-A Position object that can be used with geom_sf.
+\item{bound}{sf polygon object that defines the boundary within which points should stay.}
+
+\item{hjust}{numeric between 0 and 1, horizontal justification. 0 = left, 1 = right. Defaults to 0.5.}
+
+\item{vjust}{numeric between 0 and 1, vertical justification. 0 = bottom, 1 = top. Defaults to 0.5.}
 }
 \description{
-Creates a Position object that arranges overlapping points in a triangular pattern,
-using ggplot2's group aesthetic.
+Arrange sf point geometries in a triangular pattern
 }
