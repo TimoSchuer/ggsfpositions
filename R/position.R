@@ -62,18 +62,7 @@ position_sf_jitter <- function(width = 0.01, height = 0.01, seed = NULL) {
   )
 }
 
-#' Horizontally dodge overlapping sf point geometries by group
-#'
-#' @description
-#' Creates a Position object that arranges overlapping points in a horizontal line
-#' with equal spacing between them, using ggplot2's group aesthetic.
-#'
-#' @param width numeric, amount of horizontal spacing between points. Defaults to 0.01.
-#' @param bound sf polygon object that defines the boundary within which points should stay.
-#'        If NULL, points are not constrained.
-#'
-#' @return A Position object that can be used with geom_sf.
-#' @export
+# Für position_sf_dodge:
 position_sf_dodge <- function(width = 0.01, bound = NULL) {
   ggproto(
     NULL,
@@ -100,10 +89,17 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
         n_points <- nrow(coords)
 
         if (n_points > 1) {
+          # Sortiere nach Größe wenn size gesetzt ist
+          if ("size" %in% names(data)) {
+            size_order <- order(data$size[group_mask], decreasing = TRUE)
+            coords <- coords[size_order, ]
+            group_data <- group_data[size_order, ]
+          }
+
           # Original center point für die Gruppe
           center_point <- st_point(c(mean(coords[, "X"]), mean(coords[, "Y"])))
 
-          # Berechne initiale Offsets
+          # Berechne Offsets von links nach rechts
           offsets <- seq(-width / 2, width / 2, length.out = n_points)
 
           # Wenn bound gegeben, stelle sicher dass Punkte innerhalb bleiben
@@ -144,7 +140,7 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
               }),
               crs = st_crs(group_data$geometry)
             )
-            data$geometry[group_mask] <- new_geom
+            data$geometry[group_mask] <- new_geom[order(size_order)]
           }
         }
       }
@@ -154,20 +150,13 @@ position_sf_dodge <- function(width = 0.01, bound = NULL) {
   )
 }
 
-#' Arrange sf point geometries in a grid pattern by group
-#'
-#' @description
-#' Creates a Position object that arranges overlapping points in a grid pattern,
-#' using ggplot2's group aesthetic.
-#'
-#' @param ncol integer, number of columns in the grid. Defaults to 3.
-#' @param spacing numeric, spacing between grid points. Defaults to 0.01.
-#' @param bound sf polygon object that defines the boundary within which points should stay.
-#'        If NULL, points are not constrained.
-#'
-#' @return A Position object that can be used with geom_sf.
-#' @export
-position_sf_grid <- function(ncol = 3, spacing = 0.01, bound = NULL) {
+# Für position_sf_grid:
+position_sf_grid <- function(
+  ncol = 3,
+  x_spacing = 0.01,
+  y_spacing = 0.01,
+  bound = NULL
+) {
   ggproto(
     NULL,
     PositionIdentity,
@@ -193,6 +182,13 @@ position_sf_grid <- function(ncol = 3, spacing = 0.01, bound = NULL) {
         n_points <- nrow(coords)
 
         if (n_points > 0) {
+          # Sortiere nach Größe wenn size gesetzt ist
+          if ("size" %in% names(data)) {
+            size_order <- order(data$size[group_mask], decreasing = TRUE)
+            coords <- coords[size_order, ]
+            group_data <- group_data[size_order, ]
+          }
+
           # Original center point für die Gruppe
           center_point <- st_point(c(mean(coords[, "X"]), mean(coords[, "Y"])))
 
@@ -207,14 +203,14 @@ position_sf_grid <- function(ncol = 3, spacing = 0.01, bound = NULL) {
               seq(-(cols - 1) / 2, (cols - 1) / 2, length.out = cols),
               length.out = n_points
             ) *
-              spacing *
+              x_spacing *
               scale_factor
 
             grid_y <- rep(
               seq((rows - 1) / 2, -(rows - 1) / 2, length.out = rows),
               each = cols
             )[1:n_points] *
-              spacing *
+              y_spacing *
               scale_factor
 
             new_coords <- coords
@@ -254,7 +250,11 @@ position_sf_grid <- function(ncol = 3, spacing = 0.01, bound = NULL) {
               }),
               crs = st_crs(group_data$geometry)
             )
-            data$geometry[group_mask] <- new_geom
+            if ("size" %in% names(data)) {
+              data$geometry[group_mask] <- new_geom[order(size_order)]
+            } else {
+              data$geometry[group_mask] <- new_geom
+            }
           }
         }
       }
@@ -264,18 +264,7 @@ position_sf_grid <- function(ncol = 3, spacing = 0.01, bound = NULL) {
   )
 }
 
-#' Arrange sf point geometries in a triangular pattern by group
-#'
-#' @description
-#' Creates a Position object that arranges overlapping points in a triangular pattern,
-#' using ggplot2's group aesthetic.
-#'
-#' @param spacing numeric, spacing between points. Defaults to 0.01.
-#' @param bound sf polygon object that defines the boundary within which points should stay.
-#'        If NULL, points are not constrained.
-#'
-#' @return A Position object that can be used with geom_sf.
-#' @export
+# Für position_sf_triangle:
 position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
   ggproto(
     NULL,
@@ -302,6 +291,13 @@ position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
         n_points <- nrow(coords)
 
         if (n_points > 0) {
+          # Sortiere nach Größe wenn size gesetzt ist
+          if ("size" %in% names(data)) {
+            size_order <- order(data$size[group_mask], decreasing = TRUE)
+            coords <- coords[size_order, ]
+            group_data <- group_data[size_order, ]
+          }
+
           # Original center point für die Gruppe
           center_point <- st_point(c(mean(coords[, "X"]), mean(coords[, "Y"])))
 
@@ -361,7 +357,11 @@ position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
               }),
               crs = st_crs(group_data$geometry)
             )
-            data$geometry[group_mask] <- new_geom
+            if ("size" %in% names(data)) {
+              data$geometry[group_mask] <- new_geom[order(size_order)]
+            } else {
+              data$geometry[group_mask] <- new_geom
+            }
           }
         }
       }
@@ -370,7 +370,6 @@ position_sf_triangle <- function(spacing = 0.01, bound = NULL) {
     }
   )
 }
-
 # # Beispiel-Verwendung:
 # library(ggplot2)
 # library(sf)
