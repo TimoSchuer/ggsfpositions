@@ -19,7 +19,7 @@ The package includes several position adjustment functions:
 
 You can install the development version of ggsfpositions from GitHub with:
 
-``` r
+```{r}
 # install.packages("devtools")
 devtools::install_github("timoschuermann/ggsfpositions")
 ```
@@ -28,7 +28,7 @@ devtools::install_github("timoschuermann/ggsfpositions")
 
 Here's a complete example that demonstrates how to use the package with multiple overlapping points:
 
-``` r
+```{r}
 library(ggplot2)
 library(sf)
 library(ggsfpositions)
@@ -38,9 +38,9 @@ set.seed(123)  # for reproducibility
 
 # Create points with some overlapping coordinates
 points_df <- data.frame(
-  x = rep(c(1, 2, 3), each = 5) + rnorm(15, 0, 0.1),
-  y = rep(c(1, 2, 3), each = 5) + rnorm(15, 0, 0.1),
-  group = rep(letters[1:3], 5)
+  x = rep(c(1, 1.2, 1.4), each = 5) ,
+  y = rep(c(1, 1.2, 1.4), each = 5) ,
+  group = rep(letters[1:3], each=5)
 )
 
 # Convert to sf object
@@ -59,12 +59,16 @@ p2 <- ggplot(points_sf) +
 
 # Using position_sf_grid
 p3 <- ggplot(points_sf) +
-  geom_sf(aes(color = group), position = position_sf_grid(width = 0.2)) +
+  geom_sf(aes(color = group), position = position_sf_grid()) +
   ggtitle("With position_sf_grid")
+
+p4 <- ggplot(points_sf) +
+  geom_sf(aes(color = group), position = position_sf_dodge()) +
+  ggtitle("With position_sf_dodge")
 
 # Display plots side by side
 library(patchwork)
-p1 + p2 + p3 + plot_layout(ncol = 3)
+p1 + p2 + p3 + p4 + plot_layout(ncol = 2)
 ```
 
 This example creates a dataset with multiple points per location and demonstrates how different position adjustments can help visualize overlapping points.
